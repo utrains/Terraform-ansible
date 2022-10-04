@@ -1,7 +1,7 @@
 // Configuring the provider information
 provider "aws" {
-    region = "ap-south-1"
-    profile = "ankush"
+    region = "ca-central-1"
+    profile = "default"
 }
 
 // Creating the EC2 private key
@@ -14,7 +14,7 @@ resource "tls_private_key" "ec2_private_key" {
   rsa_bits  = 4096
 
   provisioner "local-exec" {
-        command = "echo '${tls_private_key.ec2_private_key.private_key_pem}' > ~/Desktop/${var.key_name}.pem"            
+        command = "echo '${tls_private_key.ec2_private_key.private_key_pem}' > ./key/${var.key_name}.pem"            
     }
 }
 
@@ -25,7 +25,7 @@ resource "null_resource" "key-perm" {
     ]
 
     provisioner "local-exec" {
-        command = "chmod 400 ~/Desktop/${var.key_name}.pem"
+        command = "chmod 400 ./key/${var.key_name}.pem"
     }
 }
 
@@ -118,7 +118,7 @@ resource "null_resource" "setupVol" {
 
   //
   provisioner "local-exec" {
-    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user --private-key ~/Desktop/${var.key_name}.pem -i '${aws_instance.myWebOS.public_ip},' master.yml"
+    command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -u ec2-user --private-key ./key/${var.key_name}.pem -i '${aws_instance.myWebOS.public_ip},' master.yml"
   }
 }
 
@@ -128,7 +128,7 @@ resource "aws_s3_bucket" "tera_bucket" {
   acl    = "private"
 
   tags = {
-    Name        = "terra_bucket"
+    Name        = "utrains_bucket"
   }
 }
 
@@ -279,10 +279,10 @@ resource "aws_s3_bucket_policy" "s3BucketPolicy" {
 
 //
 resource "aws_s3_bucket_object" "bucketObject" {
-  for_each = fileset("/home/cankush/Downloads/assets", "**/*.jpg")
+  for_each = fileset("./assets", "**/*.jpg")
 
   bucket = "${aws_s3_bucket.tera_bucket.bucket}"
   key    = each.value
-  source = "/home/cankush/Downloads/assets/${each.value}"
+  source = "./assets/${each.value}"
   content_type = "image/jpg"
 }
